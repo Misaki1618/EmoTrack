@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>record</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+  <style>
+    .explain{
+      text-align: center;
+      color:white;
+    }
+    .error{
+      text-align: center;
+      color:white;
+    }
+  
+    body {
+      background-color: #1F2157;
+    }
+    #google1 {
+      font-size: 30px;
+      margin-left: 20px;
+      margin-top: 20px;
+      color: azure;
+    }
+    .ddiary {
+      margin-top: 30px;
+    }
+    h3 {
+      text-align: center;
+      color: azure;
+    }
+    .form {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+    }
+    
+    .diary {
+      width: 300px;
+      height: 150px;
+    }
+    .record {
+      margin-top: 17px;
+      margin-bottom: 48px;
+    }
+    .btn0 {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .btn2 {
+      margin-top: 50px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    #submit{
+      border: 2px solid #ff7e5f;
+      border-radius: 30px;
+      background: linear-gradient(135deg, #ff7e5f, #feb47b);
+      color:white;
+      width:100px;
+      height:50px;
+      font-size:23px;
+      font-weight:700;
+    }
+    #submit2{
+      border: 2px solid #ffffff;
+      border-radius: 30px;
+      background: linear-gradient(135deg, #808080, #ffffff);
+      color:white;
+      width:100px;
+      height:50px;
+      font-size:23px;
+      font-weight:700;
+    }
+    #diary,#diary2{
+      width: 300px;
+      height: 150px;
+      margin: 0 auto;
+      display: block;
+    }
+    .btn11,.btn12{
+      background: linear-gradient(135deg, #ff7e5f, #feb47b);
+      color:#1F2157;
+      border:none;
+      border-radius:5px;
+      margin-right:10px;
+    }
+    .btn11:disabled, .btn12:disabled {
+      background: linear-gradient(to right, #ff7e5f, #feb47b); 
+      opacity: 0.5; 
+      cursor: not-allowed; 
+    }
+  </style>
+</head>
+<body>
+  <a href="/home"><span id="google1" class="material-symbols-outlined" >close</span></a>
+  <p class="error"><%= @error %></p>
+  <div class="ddiary">
+    <h3>記録</h3>
+    <form class="form" id="diaryForm" action="/audio_upload" method="post" enctype="multipart/form-data">
+      
+      <div class="record">
+        <p class="explain">今日の出来事を喋ってください</p>
+        <div class="btn0">
+          <button type="button" class="btn11" id="startRecordingBtn">録音開始</button>
+          <button type="button" class="btn12" id="stopRecordingBtn" disabled>録音停止</button>
+        </div>
+      </div>
+      
+      
+      <!-- 音声ファイルを送るためのinput -->
+      <input type="file" id="audioFile" name="audio" style="display: none;">      
+    </form>
+    <%if @filename.present?%>
+      <form class="form" id="analysisForm" action="/upload/<%=@filename%>" method="post">
+        <textarea class="diary" id="diary2" name="diary" required><%=@text%></textarea>
+        <!-- 送信ボタン -->
+        <div class="btn2">
+          <button type="submit" id="submit" class="btn btn-secondary">解析</button>
+        </div>
+      </form>
+    <%else%>
+       <form class="formbtn" >
+         <textarea class="diary" id="diary" name="diary" required></textarea>
+        <!-- 送信ボタン -->
+        <div class="btn2">
+          <button type="submit" id="submit2" class="btn btn-secondary">解析</button>
+        </div>
+      </form>
+    <%end%>
+  </div>
+
+<script>
+  let mediaRecorder;
+  let audioChunks = [];
+
+  document.getElementById('startRecordingBtn').addEventListener('click', function() {
+    navigator.mediaDevices.getUserMedia({ audio: true })
+      .then(stream => {
+        mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+        mediaRecorder.start();
+
+        mediaRecorder.addEventListener('dataavailable', event => {
+          audioChunks.push(event.data);
+        });
+
+        mediaRecorder.addEventListener('stop', async () => {
+          const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+
+          try {
+            // webmをwavに変換する処理
+            const wavBlob = await convertWebmToWav(audioBlob);
+            const fileName = `audio_${Date.now()}.wav`; // wav形式のファイル名を生成
+            const file = new File([wavBlob], fileName, { type: 'audio/wav' });
+
+            // フォームにファイルを設定
+            const audioFileInput = document.getElementById('audioFile');
+            const dataTransfer = new DataTransfer();
+            dataTransfer.items.add(file);
+            audioFileInput.files = dataTransfer.files;
+
+            // audioChunks をクリア
+            audioChunks = [];
+
+            // 自動的にフォームを送信
+            document.getElementById('diaryForm').submit();
+          } catch (error) {
+            console.error('音声ファイルの変換エラー:', error);
+          }
+        });
+
+        // ボタンの有効/無効を切り替え
+        document.getElementById('startRecordingBtn').disabled = true;
+        document.getElementById('stopRecordingBtn').disabled = false;
+      })
+      .catch(error => {
+        console.error('録音開始エラー:', error);
+      });
+  });
+
+  document.getElementById('stopRecordingBtn').addEventListener('click', function() {
+    mediaRecorder.stop();
+    document.getElementById('startRecordingBtn').disabled = false;
+    document.getElementById('stopRecordingBtn').disabled = true;
+  });
+
+  // webmをwavに変換する関数
+  async function convertWebmToWav(blob) {
+    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    const arrayBuffer = await blob.arrayBuffer();
+    const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+
+    const offlineContext = new OfflineAudioContext(audioBuffer.numberOfChannels, audioBuffer.length, audioBuffer.sampleRate);
+    const bufferSource = offlineContext.createBufferSource();
+    bufferSource.buffer = audioBuffer;
+    bufferSource.connect(offlineContext.destination);
+    bufferSource.start(0);
+
+    const renderedBuffer = await offlineContext.startRendering();
+    return audioBufferToWav(renderedBuffer);
+  }
+
+  // AudioBufferをwav形式に変換する関数
+  function audioBufferToWav(buffer) {
+    const numOfChannels = buffer.numberOfChannels;
+    const sampleRate = buffer.sampleRate;
+    const format = 1; // PCM
+    const bitDepth = 16;
+
+    let result;
+    let length = buffer.length * numOfChannels * 2 + 44;
+    let outputBuffer = new ArrayBuffer(length);
+    let view = new DataView(outputBuffer);
+
+    function writeString(view, offset, string) {
+      for (let i = 0; i < string.length; i++) {
+        view.setUint8(offset + i, string.charCodeAt(i));
+      }
+    }
+
+    // RIFFヘッダ
+    writeString(view, 0, 'RIFF');
+    view.setUint32(4, 36 + buffer.length * numOfChannels * 2, true);
+    writeString(view, 8, 'WAVE');
+    writeString(view, 12, 'fmt ');
+    view.setUint32(16, 16, true);
+    view.setUint16(20, format, true);
+    view.setUint16(22, numOfChannels, true);
+    view.setUint32(24, sampleRate, true);
+    view.setUint32(28, sampleRate * numOfChannels * 2, true);
+    view.setUint16(32, numOfChannels * 2, true);
+    view.setUint16(34, bitDepth, true);
+    writeString(view, 36, 'data');
+    view.setUint32(40, buffer.length * numOfChannels * 2, true);
+
+    // PCMデータ
+    let offset = 44;
+    for (let i = 0; i < buffer.length; i++) {
+      for (let channel = 0; channel < numOfChannels; channel++) {
+        let sample = buffer.getChannelData(channel)[i];
+        let sampleInt = sample < 0 ? sample * 0x8000 : sample * 0x7FFF;
+        view.setInt16(offset, sampleInt, true);
+        offset += 2;
+      }
+    }
+
+    return new Blob([view], { type: 'audio/wav' });
+  }
+</script>
+
+</body>
+</html>
+
+

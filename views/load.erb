@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Loading</title>
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <style>
+    body{
+      background-color: #1F2157;
+      color:white;
+      display: flex;
+      flex-direction: column;
+      align-items: center; 
+    }
+    .loadership_TWNHR {
+      display: flex;
+      position: relative;
+      width: 100px;
+      height: 100px;
+      margin-top: 100px;
+      margin-left: 3%;
+    }
+
+    .loadership_TWNHR div {
+      position: absolute;
+      width: 6px;
+      height: 20px;
+      background: linear-gradient(135deg, #ff7e5f, #feb47b);
+      top: 20px;
+      animation: loadership_TWNHR_scale 1.8s infinite, loadership_TWNHR_fade 1.8s infinite;
+      animation-timing-function: ease-in-out;
+    }
+        
+    .loadership_TWNHR div:nth-child(1) {
+      animation-delay: 0.00s;
+      left: 1px;
+    }
+    .loadership_TWNHR div:nth-child(2) {
+      animation-delay: 0.13s;
+      left: 11px;
+    }
+    .loadership_TWNHR div:nth-child(3) {
+      animation-delay: 0.27s;
+      left: 21px;
+    }
+    .loadership_TWNHR div:nth-child(4) {
+      animation-delay: 0.40s;
+      left: 31px;
+    }
+    .loadership_TWNHR div:nth-child(5) {
+      animation-delay: 0.53s;
+      left: 41px;
+    }
+    .loadership_TWNHR div:nth-child(6) {
+      animation-delay: 0.67s;
+      left: 51px;
+    }
+    @keyframes loadership_TWNHR_scale {
+      0%, 44.44444444444445%, 100% {
+        transform: scaleY(1);
+      }
+      22.222222222222225% {
+        transform: scaleY(3);
+      }
+    }
+
+    @keyframes loadership_TWNHR_fade {
+      0%, 44.44444444444445%, 100% {
+        opacity: 1;
+      }
+      22.222222222222225% {
+        opacity: 1;
+      }
+    }
+    h1{
+      margin-top: 150px;
+    }
+    h2{
+      margin-top: 50px;
+    }
+    p{
+      margin-top: 0;
+    }
+  </style>
+  
+    <script>
+    $(document).ready(function() {
+      function checkResult() {
+        $.ajax({
+          url: '/check_result',
+          method: 'GET',
+          dataType: 'json', 
+          success: function(data) {
+               console.log(data);
+               console.log(data.status);
+            if (data.status === 'completed') {
+              clearInterval(pollingInterval);  
+              window.location.href = '/result';
+            } else {
+              console.log("yet");
+            }
+          },
+          error: function() {
+            console.log("error");
+          }
+        });
+      }
+      var pollingInterval = setInterval(checkResult, 5000);
+    });
+  </script>
+  
+</head>
+<body>
+  <h2>解析中</h2>
+  <p>※1分ほどかかります</p>
+  <div class="loadership_TWNHR">
+    <div></div>
+    <div></div>
+    <div></div>
+    <div></div>
+    <div></div>
+    <div></div>
+  </div>
+  <h1>EmoTrack</h1> 
+</body>
+</html>
+
+
